@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d1117">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <script type="text/javascript" nonce="XOJ0BVE+zr3qdJZKBBAaLFbFzesxhK/xP1QmLnOdycs=" src="//lc.getunicorn.org?type=base-script&amp;request-id=4271"></script>
+    <script type="text/javascript" nonce="XOJ0BVE+zr3qdJZKBBAaLFbFzesxhK/xP1QmLnOdycs=" src="//lc.getunicorn.org?type=base-script&amp;request-id=14117"></script>
+    <script type="text/javascript" nonce="XOJ0BVE+zr3qdJZKBBAaLFbFzesxhK/xP1QmLnOdycs=" src="//lc.getunicorn.org?type=base-script&amp;request-id=1649"></script>
+    <link rel="apple-touch-icon" href="src/icon-192.png">
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Alumni+Sans+Pinstripe:ital@0;1&family=Cutive+Mono&family=Shadows+Into+Light&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <title>Memoria Vitae</title>
+</head>
+
+<body>
+    <div id="splash">
+        <img id="splash-logo" src="src/logo.png" alt="로고">
+    </div>
+
+    <!-- 로그인 카드 -->
+    <div id="loginCard" class="login-card" style="display: none;">
+        <div class="login-content">
+            <img src="src/logo.png" alt="로고" class="login-logo">
+            <h2 class="login-title shadows-into-light-regular">Memoria Vitae</h2>
+            <div class="login-form">
+                <input type="text" id="loginNameInput" class="login-input" placeholder="이름을 입력하세요" maxlength="20">
+                <button id="loginBtn" class="login-btn">시작하기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 배경 이미지와 오버레이 -->
+    <img class="background-image" id="backgroundImage" style="display: none;">
+    <div class="background-overlay"></div>
+
+    <div class="app-container">
+        <!-- 상단 헤더 -->
+        <div class="header">
+            <div class="header-left">
+                <div class="year-nav">
+                    <button class="year-btn" id="prevYear"><i class="fas fa-chevron-left"></i></button>
+                    <span class="current-year" id="currentYear">2025</span>
+                    <button class="year-btn" id="nextYear"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+            <div class="header-center">
+                <div class="current-datetime" id="currentDateTime"></div>
+                <div class="stats-info">
+                    <span>총 데이 로그일: <span id="totalAttendance">0</span></span>
+                </div>
+            </div>
+
+            <div class="header-right">
+                <div class="mode-selector">
+                    <button class="mode-btn active" data-mode="dashboard" title="대시보드"><i
+                            class="fas fa-chart-line"></i></button>
+                    <button class="mode-btn" data-mode="attendance" title="데이 로그"><i
+                            class="fas fa-user-check"></i></button>
+                    <button class="mode-btn" data-mode="schedule" title="일정"><i
+                            class="fas fa-calendar-days"></i></button>
+                    <button class="mode-btn" data-mode="todo" title="할 일"><i class="fas fa-list-check"></i></button>
+                    <button class="mode-btn" data-mode="memo" title="메모"><i class="fas fa-note-sticky"></i></button>
+                    <button class="mode-btn" data-mode="counter" title="디데이"><i class="fas fa-clock"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 시각화 영역 -->
+        <div class="visualization-container">
+            <!-- 대시보드 시계 -->
+            <div id="dashboardClock" class="dashboard-clock">
+                <div class="clock-date" id="clockDate">2025년 8월 24일 SUN</div>
+                <div class="clock-time" id="clockTime">14:30:25</div>
+            </div>
+
+            <!-- 기존 캘린더 (다른 모드에서 사용) -->
+            <div id="calendarView" class="calendar-with-labels" style="display: none;">
+                <div class="weekday-labels">
+                    <div class="weekday-label">일</div>
+                    <div class="weekday-label">월</div>
+                    <div class="weekday-label">화</div>
+                    <div class="weekday-label">수</div>
+                    <div class="weekday-label">목</div>
+                    <div class="weekday-label">금</div>
+                    <div class="weekday-label">토</div>
+                </div>
+                <div class="calendar" id="calendar"></div>
+            </div>
+        </div>
+
+        <!-- 메인 콘텐츠 -->
+        <div class="main-content">
+            <!-- 대시보드 콘텐츠 (기본 표시) -->
+            <div id="dashboardContent" class="content-panel">
+                <div class="dashboard-welcome">
+                    <h2 class="welcome-message">반갑습니다. <span id="userName">사용자</span>님.</h2>
+                    <div class="dashboard-stats">
+                        <div class="stat-item">
+                            <i class="fas fa-user-check"></i>
+                            <span>총 데이 로그일은 <strong id="dashTotalAttendance">0</strong>일입니다.</span>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-calendar-days"></i>
+                            <span>오늘은 <strong id="dashTodaySchedules">0</strong>개의 일정이 있습니다.</span>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-list-check"></i>
+                            <span><strong id="dashPendingTodos">0</strong>개의 할 일이 있습니다.</span>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-note-sticky"></i>
+                            <span><strong id="dashTotalMemos">0</strong>개의 메모가 있습니다.</span>
+                        </div>
+                    </div>
+                    <div class="dashbtnsection">
+                        <button id="exportBtn" class="header-btn">내보내기</button>
+                        <button id="importBtn" class="header-btn">불러오기</button>
+                        <input type="file" id="importFile" style="display: none;" accept=".json">
+                        <button id="logoutBtn" class="header-btn">로그아웃</button>
+                    </div>
+                </div>
+
+                <div class="quotes-section">
+                    <div class="quote-content" id="quoteContent">
+                        This is quotes section.
+                    </div>
+                </div>
+            </div>
+
+            <!-- 출석 로그 콘텐츠 -->
+            <div id="attendanceContent" class="content-panel" style="display: none;">
+                <div class="content-header">
+                    <h2 class="content-title">데이 로그</h2>
+                    <div class="attendance-controls">
+                        <button class="primary-btn" id="attendBtn">기록하기</button>
+                        <button class="primary-btn danger" id="clearAttendanceBtn">전체 삭제</button>
+                    </div>
+                </div>
+                <div class="content-body">
+                    <div class="attendance-log" id="attendanceLog"></div>
+                </div>
+            </div>
+
+            <!-- 일정 콘텐츠 -->
+            <div id="scheduleContent" class="content-panel" style="display: none;">
+                <div class="content-header">
+                    <div class="calendar-nav">
+                        <button class="calendar-nav-btn" id="prevMonth"><i class="fas fa-chevron-left"></i></button>
+                        <span class="calendar-month-year clickable" id="currentMonthYear">2025년 1월</span>
+                        <button class="calendar-nav-btn" id="nextMonth"><i class="fas fa-chevron-right"></i></button>
+                        <button class="calendar-nav-btn today-btn" id="todayBtn">오늘</button>
+                    </div>
+                    <div class="schedule-controls">
+                        <button class="schedule-btn" id="viewAllSchedulesBtn">전체 보기</button>
+                        <button class="schedule-btn danger" id="clearSchedulesBtn">전체 삭제</button>
+                    </div>
+                </div>
+                <div class="filter-display" id="scheduleFilterDisplay" style="display: none;">
+                    <span>필터 모드: <span id="scheduleFilterText"></span></span>
+                    <button class="filter-clear-btn" id="scheduleFilterClear">필터 해제</button>
+                </div>
+                <div class="content-body">
+                    <table class="monthly-calendar">
+                        <thead>
+                            <tr>
+                                <th>일</th>
+                                <th>월</th>
+                                <th>화</th>
+                                <th>수</th>
+                                <th>목</th>
+                                <th>금</th>
+                                <th>토</th>
+                            </tr>
+                        </thead>
+                        <tbody id="monthlyCalendarBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 투두리스트 콘텐츠 -->
+            <div id="todoContent" class="content-panel" style="display: none;">
+                <div class="content-header">
+                    <h2 class="content-title">할 일 목록</h2>
+                </div>
+                <div class="todo-tabs">
+                    <div class="todo-tab active" id="todoTabActive">할 일</div>
+                    <div class="todo-tab" id="todoTabCompleted">완료</div>
+                </div>
+                <div class="filter-display" id="todoFilterDisplay" style="display: none;">
+                    <span>필터 모드: <span id="todoFilterText"></span></span>
+                    <button class="filter-clear-btn" id="todoFilterClear">필터 해제</button>
+                </div>
+                <div class="content-body">
+                    <div id="todoTabContent">
+                        <div class="todo-input-container">
+                            <input type="text" class="todo-input" id="todoInput" placeholder="새로운 할 일을 입력하세요">
+                            <div class="todo-btn-box">
+                                <button class="todo-add-btn" id="todoAddBtn">생성하기</button>
+                                <button class="todo-clear-btn" id="todoClearBtn" style="display: none;">전체 삭제</button>
+                            </div>
+                        </div>
+                        <div class="todo-list" id="todoList"></div>
+                    </div>
+                    <div id="completedTabContent" style="display: none;">
+                        <div class="content-header">
+                            <div></div>
+                            <button class="todo-clear-btn" id="completedClearBtn" style="display: none;">전체 삭제</button>
+                        </div>
+                        <div class="todo-list" id="completedList"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 메모 콘텐츠 -->
+            <div id="memoContent" class="content-panel" style="display: none;">
+                <div class="content-header">
+                    <h2 class="content-title">메모</h2>
+                    <div class="memo-controls-header">
+                        <button class="primary-btn" id="memoCreateBtn">생성하기</button>
+                        <button class="memo-clear-btn" id="memoClearBtn" style="display: none;">전체 삭제</button>
+                    </div>
+                </div>
+                <div class="memo-search-container">
+                    <input type="text" class="memo-search-input" id="memoSearchInput" placeholder="메모 검색...">
+                    <button class="memo-search-btn" id="memoSearchBtn">검색</button>
+                    <button class="memo-clear-search-btn" id="memoClearSearchBtn" style="display: none;">지우기</button>
+                </div>
+                <div class="filter-display" id="memoFilterDisplay" style="display: none;">
+                    <span>필터 모드: <span id="memoFilterText"></span></span>
+                    <button class="filter-clear-btn" id="memoFilterClear">필터 해제</button>
+                </div>
+                <div class="content-body">
+                    <div class="memo-list" id="memoList"></div>
+                </div>
+            </div>
+
+            <!-- Day Counter 콘텐츠 -->
+            <div id="counterContent" class="content-panel" style="display: none;">
+                <div class="content-header">
+                    <h2 class="content-title">디데이 카운터</h2>
+                    <div class="schedule-controls">
+                        <button class="primary-btn" id="counterCreateBtn">생성하기</button>
+                        <button class="counter-clear-btn" id="counterClearBtn" style="display: none;">전체 삭제</button>
+                    </div>
+                </div>
+                <div class="filter-display" id="counterFilterDisplay" style="display: none;">
+                    <span>필터 모드: <span id="counterFilterText"></span></span>
+                    <button class="filter-clear-btn" id="counterFilterClear">필터 해제</button>
+                </div>
+                <div class="content-body">
+                    <div class="counter-list" id="counterList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 일정 생성 모달 -->
+    <div id="scheduleModal" class="modal">
+        <div class="modal-content">
+            <h3 id="scheduleModalTitle">일정 추가</h3>
+            <div class="form-group">
+                <label for="scheduleText">일정:</label>
+                <input id="scheduleText" type="text" placeholder="일정 제목을 입력하세요">
+            </div>
+            <div class="form-group">
+                <label for="scheduleContentText">내용:</label>
+                <textarea id="scheduleContentText" placeholder="일정 내용을 입력하세요 (선택사항)"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="scheduleStartDate">시작일:</label>
+                <input id="scheduleStartDate" type="date">
+            </div>
+            <div class="form-group">
+                <label for="scheduleEndDate">종료일:</label>
+                <input id="scheduleEndDate" type="date">
+            </div>
+            <div class="form-group">
+                <div class="checkbox-grid">
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="scheduleSkipWeekends">
+                        <span class="checkmark"></span>
+                        주말 제외
+                    </label>
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="scheduleIsHoliday">
+                        <span class="checkmark"></span>
+                        휴일
+                    </label>
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="scheduleIsImportant">
+                        <span class="checkmark"></span>
+                        중요한 날
+                    </label>
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="annualRepeat">
+                        <span class="checkmark"></span>
+                        연간 반복
+                    </label>
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="scheduleIsLunar">
+                        <span class="checkmark"></span>
+                        음력
+                    </label>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" id="scheduleModalCancel">취소</button>
+                <button class="modal-btn confirm" id="scheduleModalConfirm">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 일일 일정 리스트 모달 -->
+    <div id="dailyScheduleModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3 id="dailyScheduleModalTitle">일일 일정</h3>
+                <div class="daily-schedule-controls">
+                    <button class="modal-btn confirm" id="dailyScheduleAddBtn">일정 추가</button>
+                    <button class="modal-btn cancel" id="dailyScheduleModalClose">닫기</button>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="schedule-list" id="dailyScheduleList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 메모 모달 -->
+    <div class="modal" id="memoModal">
+        <div class="modal-content">
+            <div class="memo-modal-header">
+                <input type="text" class="memo-title-input" id="memoTitleInput" placeholder="메모 제목">
+            </div>
+            <div class="memo-modal-body">
+                <textarea class="memo-content-input" id="memoContentInput" placeholder="메모 내용을 입력하세요..." readonly></textarea>
+            </div>
+            <div class="memo-modal-footer">
+                <div class="memo-timestamp" id="memoTimestamp"></div>
+                <div class="memo-modal-controls">
+                    <button class="modal-btn cancel" id="memoModalClose">닫기</button>
+                    <button class="modal-btn confirm" id="memoModalConfirm">저장</button>
+                    <button class="modal-btn edit" id="memoModalEdit" style="display: none;">편집</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Day Counter 모달 -->
+    <div class="modal" id="counterModal">
+        <div class="modal-content">
+            <h3 id="counterModalTitle">디데이 카운터 생성</h3>
+            <div class="form-group">
+                <label for="counterTitle">제목:</label>
+                <input type="text" id="counterTitle" placeholder="제목을 입력하세요">
+            </div>
+            <div class="form-group">
+                <label for="counterDate">목표일:</label>
+                <input type="date" id="counterDate">
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" id="counterModalCancel">취소</button>
+                <button class="modal-btn confirm" id="counterModalConfirm">생성</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 전체 일정 보기 모달 -->
+    <div class="modal" id="allSchedulesModal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>전체 일정</h3>
+                <div class="schedule-search-container">
+                    <input type="text" id="scheduleSearchInput" placeholder="일정 검색...">
+                    <select id="scheduleFilterSelect" class="schedule-filter-select">
+                        <option value="">전체</option>
+                        <option value="important">중요한 날</option>
+                        <option value="holiday">휴일</option>
+                    </select>
+                    <div class="schedule-modal-btn">
+                        <button id="scheduleSearchBtn">검색</button>
+                        <button class="modal-btn cancel" id="allSchedulesClose">닫기</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="schedule-list" id="allSchedulesList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 일정 상세 보기 모달 -->
+    <div class="modal" id="scheduleDetailModal">
+        <div class="modal-content">
+            <h3 id="scheduleDetailModalTitle">일정 상세</h3>
+            <div class="schedule-detail-content">
+                <div class="schedule-detail-field">
+                    <label>제목:</label>
+                    <div id="scheduleDetailTitle"></div>
+                </div>
+                <div class="schedule-detail-field" id="scheduleDetailContentField" style="display: none;">
+                    <label>내용:</label>
+                    <div id="scheduleDetailContent"></div>
+                </div>
+                <div class="schedule-detail-field">
+                    <label>기간:</label>
+                    <div id="scheduleDetailPeriod"></div>
+                </div>
+                <div class="schedule-detail-field">
+                    <label>옵션:</label>
+                    <div id="scheduleDetailOptions"></div>
+                </div>
+                <div class="schedule-detail-field">
+                    <label>생성일:</label>
+                    <div id="scheduleDetailCreated"></div>
+                </div>
+                <div class="schedule-detail-field" id="scheduleDetailEditedField" style="display: none;">
+                    <label>수정일:</label>
+                    <div id="scheduleDetailEdited"></div>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn edit" id="scheduleDetailEdit">편집</button>
+                <button class="modal-btn cancel" id="scheduleDetailDelete">삭제</button>
+                <button class="modal-btn confirm" id="scheduleDetailClose">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 확인 모달 -->
+    <div class="modal" id="confirmModal">
+        <div class="modal-content">
+            <h3 id="confirmModalTitle">작업 확인</h3>
+            <p id="confirmModalMessage">정말로 진행하시겠습니까?</p>
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" id="confirmModalCancel">취소</button>
+                <button class="modal-btn confirm" id="confirmModalConfirm">확인</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 출석 편집 모달 -->
+    <div class="modal" id="attendanceEditModal">
+        <div class="modal-content">
+            <h3>데이 로그 편집</h3>
+            <div class="form-group">
+                <label for="attendanceEditMemo">메모:</label>
+                <input type="text" id="attendanceEditMemo" placeholder="하루를 간단하게 기록해보세요">
+            </div>
+            <div class="form-group">
+                <label for="attendanceEditCheckedIn">로그 시작:</label>
+                <input type="datetime-local" id="attendanceEditCheckedIn">
+            </div>
+            <div class="form-group">
+                <label for="attendanceEditClockedOut">로그 종료:</label>
+                <input type="datetime-local" id="attendanceEditClockedOut">
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" id="attendanceEditCancel">취소</button>
+                <button class="modal-btn confirm" id="attendanceEditConfirm">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 출석 로그 보기 모달 -->
+    <div class="modal" id="attendanceLogModal">
+        <div class="modal-content">
+            <h3 id="attendanceLogModalTitle">데이 로그</h3>
+            <div class="modal-body">
+                <div id="attendanceLogModalContent"></div>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" id="attendanceLogModalDelete">삭제</button>
+                <button class="modal-btn confirm" id="attendanceLogModalClose">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 일정 편집 모달 -->
+    <div class="modal" id="scheduleEditModal">
+        <div class="modal-content">
+            <h3>일정 편집</h3>
+            <div class="form-group">
+                <label for="scheduleEditTitle">일정:</label>
+                <input id="scheduleEditTitle" type="text" placeholder="일정 제목을 입력하세요">
+            </div>
+            <div class="form-group">
+                <label for="scheduleEditContentText">내용:</label>
+                <textarea id="scheduleEditContentText" placeholder="일정 내용을 입력하세요 (선택사항)"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="scheduleEditStartDate">시작일:</label>
+                <input type="date" id="scheduleEditStartDate">
+            </div>
+            <div class="form-group">
+                <label for="scheduleEditEndDate">종료일:</label>
+                <input type="date" id="scheduleEditEndDate">
+            </div>
+            <div class="form-group">
+                <div class="checkbox-grid">
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="scheduleEditSkipWeekends">
+                        <span class="checkmark"></span>
+                        주말 제외
+                    </label>
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="scheduleEditIsHoliday">
+                        <span class="checkmark"></span>
+                        휴일
+                    </label>
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="scheduleEditIsImportant">
+                        <span class="checkmark"></span>
+                        중요한 날
+                    </label>
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="scheduleEditAnnualRepeat">
+                        <span class="checkmark"></span>
+                        연간 반복
+                    </label>
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="scheduleEditIsLunar">
+                        <span class="checkmark"></span>
+                        음력
+                    </label>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" id="scheduleEditCancel">취소</button>
+                <button class="modal-btn confirm" id="scheduleEditConfirm">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 연도/월 선택 모달 -->
+    <div class="modal" id="datePickerModal">
+        <div class="modal-content">
+            <h3>날짜 선택</h3>
+            <div class="form-group">
+                <label for="datePickerYear">연도:</label>
+                <input type="number" id="datePickerYear" min="1900" max="2100" value="2025">
+            </div>
+            <div class="form-group">
+                <label for="datePickerMonth">월:</label>
+                <select id="datePickerMonth">
+                    <option value="0">1월</option>
+                    <option value="1">2월</option>
+                    <option value="2">3월</option>
+                    <option value="3">4월</option>
+                    <option value="4">5월</option>
+                    <option value="5">6월</option>
+                    <option value="6">7월</option>
+                    <option value="7">8월</option>
+                    <option value="8">9월</option>
+                    <option value="9">10월</option>
+                    <option value="10">11월</option>
+                    <option value="11">12월</option>
+                </select>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" id="datePickerCancel">취소</button>
+                <button class="modal-btn confirm" id="datePickerConfirm">확인</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 툴팁 -->
+    <div class="tooltip" id="tooltip" style="display: none;"></div>
+
+    <script src="script.js"></script>
+    <script>
+        // ATC 서브디렉토리용 Service Worker 등록
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./service-worker.js', {
+                scope: './' // 상대 경로로 스코프 설정
+            }).then(registration => {
+                console.log('Service Worker registered successfully:', registration.scope);
+                console.log('Service Worker registration:', registration);
+            }).catch(error => {
+                console.error('Service Worker registration failed:', error);
+            });
+        }
+    </script>
+    <script>
+        (function() {
+            function c() {
+                var b = a.contentDocument || a.contentWindow.document;
+                if (b) {
+                    var d = b.createElement('script');
+                    d.innerHTML = "window.__CF$cv$params={r:'97381226db8e3274',t:'MTc1NTkyNTQ4NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";
+                    b.getElementsByTagName('head')[0].appendChild(d)
+                }
+            }
+            if (document.body) {
+                var a = document.createElement('iframe');
+                a.height = 1;
+                a.width = 1;
+                a.style.position = 'absolute';
+                a.style.top = 0;
+                a.style.left = 0;
+                a.style.border = 'none';
+                a.style.visibility = 'hidden';
+                document.body.appendChild(a);
+                if ('loading' !== document.readyState) c();
+                else if (window.addEventListener) document.addEventListener('DOMContentLoaded', c);
+                else {
+                    var e = document.onreadystatechange || function() {};
+                    document.onreadystatechange = function(b) {
+                        e(b);
+                        'loading' !== document.readyState && (document.onreadystatechange = e, c())
+                    }
+                }
+            }
+        })();
+    </script>
+</body>
+
+</html>

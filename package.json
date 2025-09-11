@@ -1,0 +1,39 @@
+{
+    "name": "MV",
+    "version": "1.0.0",
+    "main": "main.js",
+    "description": "multi-feature note-taking app",
+    "author": "Mong",
+    "license": "ISC",
+    "scripts": {
+        "start": "electron .",
+        "build": "electron-builder"
+    },
+    "keywords": [],
+    "devDependencies": {
+        "electron": "^37.3.1",
+        "electron-builder": "^26.0.12"
+    },
+    "build": {
+        "appId": "com.mong.vo",
+        "productName": "MV",
+        "directories": {
+            "output": "dist"
+        },
+        "files": [
+            "**/*",
+            "!node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+            "!**/*.map"
+        ],
+        "win": {
+            "target": "nsis",
+            "icon": "src/icon.ico"
+        },
+        "nsis": {
+            "oneClick": false,
+            "allowToChangeInstallationDirectory": true
+        },
+        "mac": null,
+        "linux": null
+    }
+}
