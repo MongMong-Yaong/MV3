@@ -60,6 +60,17 @@ body {
     align-items: center;
 }
 
+.background-video {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: -2;
+    transition: opacity 0.8s ease;
+}
+
 .background-image {
     position: fixed;
     top: 0;
@@ -69,7 +80,19 @@ body {
     object-fit: cover;
     z-index: -2;
     transition: opacity 0.8s ease;
-    /* fade-in 효과를 위한 transition 추가 */
+}
+
+#toggleVideoBtn.video-off i {
+    color: #7d8590;
+}
+
+#toggleVideoBtn.video-on i {
+    color: #58a6ff;
+}
+
+#toggleVideoBtn:hover i {
+    transform: scale(1.1);
+    transition: transform 0.2s ease;
 }
 
 .background-overlay {
@@ -676,6 +699,28 @@ body {
     backdrop-filter: blur(15px);
 }
 
+.header-btn i {
+    font-size: 14px;
+}
+
+.header-btn:hover i {
+    transform: rotate(180deg);
+    transition: transform 0.3s ease;
+}
+
+#refreshBgBtn:hover i {
+    animation: spin 0.6s ease-in-out;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .header-btn:hover {
     background: rgba(0, 0, 0, 0.25);
     transform: translateY(-1px);
@@ -936,6 +981,7 @@ body {
 
 .attendance-log-item:hover {
     background: rgba(0, 0, 0, 0.25);
+    cursor: pointer;
 }
 
 .attendance-log-item:hover .attendance-item-controls {
@@ -963,6 +1009,7 @@ body {
     transition: border-color 0.2s ease;
     width: 100%;
     user-select: none;
+    cursor: pointer;
 }
 
 .attendance-memo-input:focus {
@@ -1061,12 +1108,20 @@ body {
     font-weight: bold;
     color: #c9d1d9;
     margin-bottom: 8px;
+    max-height: 300px;
+    /* 원하는 높이 제한 */
+    overflow-y: auto;
+    /* 세로 스크롤 표시 */
 }
 
 .attendance-log-time {
     font-size: 12px;
     color: #7d8590;
     line-height: 1.4;
+}
+
+#attendanceEditMemo {
+    min-height: 150px;
 }
 
 
@@ -1808,6 +1863,7 @@ body {
     transition: all 0.2s ease;
     position: relative;
     overflow: hidden;
+    cursor: pointer;
 }
 
 .counter-item::before {
@@ -1837,7 +1893,52 @@ body {
     flex: 1;
     min-width: 0;
     max-width: 500px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
+
+
+/* 디데이 카운터 2줄 표시 스타일 */
+
+.counter-first-line {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.counter-second-line {
+    display: flex;
+    align-items: center;
+}
+
+.counter-date-text {
+    font-size: 14px;
+    /* color: #7d8590; */
+    color: #5d9ffc;
+    min-width: 80px;
+    font-weight: 800;
+}
+
+.counter-title-text {
+    font-weight: bold;
+    color: #c9d1d9;
+    font-size: 16px;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.counter-separator {
+    color: #7d8590;
+    font-weight: normal;
+    opacity: 0.6;
+}
+
+
+/* 기존 counter-title, counter-date는 새로운 스타일과 충돌 방지를 위해 유지 */
 
 .counter-title {
     font-weight: bold;
@@ -1864,9 +1965,6 @@ body {
     font-size: 16px;
     font-weight: bold;
     line-height: 1.2;
-    display: flex;
-    align-items: center;
-    gap: 8px;
 }
 
 .counter-days.past {
@@ -1902,6 +2000,45 @@ body {
 }
 
 
+/* 데이 카운터 필터 버튼 스타일 */
+
+.counter-filter-controls {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+}
+
+.counter-filter-btn {
+    background: rgba(33, 38, 45, 0.8);
+    border: 1px solid rgba(48, 54, 61, 0.6);
+    color: #c9d1d9;
+    min-height: 32px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    backdrop-filter: blur(5px);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+.counter-filter-btn:hover {
+    background: rgba(48, 54, 61, 0.8);
+}
+
+.counter-filter-btn.active {
+    background: rgba(88, 166, 255, 0.8);
+    color: white;
+    border-color: rgba(88, 166, 255, 0.6);
+}
+
+
 /* 모달 스타일 - 완전 수정 */
 
 .modal {
@@ -1914,9 +2051,7 @@ body {
     z-index: 2000;
     display: none;
     align-items: flex-start;
-    /* 상단 정렬 */
     justify-content: center;
-    /* 가로 중앙 */
     padding: 20px;
     box-sizing: border-box;
 }
@@ -1940,6 +2075,8 @@ body {
 
 .modal-content.large {
     max-width: 800px;
+    width: min(800px, 90%);
+    /* 이 줄을 추가 - 화면이 작을 때는 90%로 제한 */
     max-height: 80vh;
     overflow: hidden;
     display: flex;
@@ -2004,7 +2141,6 @@ body {
 }
 
 .form-group textarea {
-    min-height: 200px;
     resize: none;
 }
 
@@ -2018,7 +2154,7 @@ body {
 .form-group select:focus {
     outline: none;
     border-color: rgba(88, 166, 255, 0.8);
-    /* box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.2); */
+    box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.2);
 }
 
 .form-group input::placeholder,
@@ -2078,6 +2214,12 @@ body {
     overflow-y: auto;
 }
 
+.scheduleTitle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 
 /* 모달 버튼들 */
 
@@ -2131,79 +2273,72 @@ body {
 }
 
 
-/* 메모 모달 특별 스타일 - 수정됨 */
+/* 상세보기 모달 스타일 */
 
-
-/* .memo-modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 20px;
-    border: 1px solid rgba(48, 54, 61, 0.6);
+.detail-display-field {
+    background: rgba(33, 38, 45, 0.6);
+    border: 1px solid rgba(48, 54, 61, 0.4);
     border-radius: 8px;
-    background: rgba(33, 38, 45, 0.3);
-    gap: 12px;
-    margin-bottom: 16px;
-    transition: border-color 0.2s ease;
+    padding: 16px;
+    color: #c9d1d9;
+    font-size: 14px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    min-height: 50px;
 }
 
-.memo-title-input {
-    flex: 1;
-    background: transparent;
-    border: none;
-    color: #c9d1d9;
-    font-size: 16px;
-    font-weight: bold;
-    padding: 0;
-    min-height: 24px;
-    width: 1px;
-    padding: 8px;
-} */
+.detail-title {
+    min-height: 50px;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.detail-memo {
+    min-height: 50px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+#scheduleEditContentText,
+#attendanceCreateMemo {
+    min-height: 150px;
+}
+
+
+/* 메모 모달 스타일 - 완전히 새로 작성 */
 
 .memo-title-input {
     width: 100%;
-    display: flex;
-    padding: 12px 20px;
+    background: rgba(33, 38, 45, 0.8);
     border: 1px solid rgba(48, 54, 61, 0.6);
-    border-radius: 8px;
-    background: rgba(33, 38, 45, 0.3);
     color: #c9d1d9;
+    padding: 12px 16px;
+    border-radius: 8px;
     font-size: 16px;
     font-weight: bold;
-    min-height: 24px;
-    gap: 12px;
-    margin-bottom: 16px;
+    box-sizing: border-box;
+    font-family: inherit;
     transition: border-color 0.2s ease;
+    min-height: 50px;
+    max-height: 50px;
+    overflow-y: auto;
+    resize: none;
 }
 
 .memo-title-input:focus {
     outline: none;
     border-color: rgba(88, 166, 255, 0.8);
-    border-radius: 6px;
 }
 
 .memo-title-input::placeholder {
     color: #7d8590;
 }
 
-.memo-modal-controls {
-    display: flex;
-    gap: 8px;
-    flex-shrink: 0;
-}
-
-.memo-modal-body {
-    flex: 1;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    height: 400px;
-    margin-bottom: 16px;
-}
-
 .memo-content-input {
-    flex: 1;
-    background: rgba(33, 38, 45, 0.5);
+    width: 100%;
+    background: rgba(33, 38, 45, 0.8);
     border: 1px solid rgba(48, 54, 61, 0.6);
     color: #c9d1d9;
     padding: 16px;
@@ -2214,32 +2349,57 @@ body {
     line-height: 1.6;
     font-family: inherit;
     transition: border-color 0.2s ease;
+    min-height: 300px;
+    max-height: 300px;
+    overflow-y: auto;
+    box-sizing: border-box;
 }
 
-.memo-content-input:focus {
+
+/* .memo-content-input:focus {
     outline: none;
     border-color: rgba(88, 166, 255, 0.8);
-}
+} */
 
 .memo-content-input::placeholder {
     color: #7d8590;
 }
 
 .memo-content-input[readonly] {
-    background: rgba(22, 27, 34, 0.3);
+    background: rgba(33, 38, 45, 0.8);
     border-color: rgba(48, 54, 61, 0.4);
     cursor: default;
 }
 
-.memo-modal-footer {
-    padding: 12px 20px;
-    border: 1px solid rgba(33, 38, 45, 0.8);
-    border-radius: 8px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.memo-title-input[readonly]:focus {
+    border: 0.1px solid rgba(48, 54, 61, 0.6);
+    box-shadow: none;
+    cursor: default;
+}
+
+.memo-content-input[readonly]:focus {
+    border: 0.1px solid rgba(48, 54, 61, 0.6);
+    box-shadow: none;
+}
+
+.memo-timestamp-section {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    padding: 16px;
     background: rgba(33, 38, 45, 0.3);
-    gap: 12px;
+    border: 1px solid rgba(48, 54, 61, 0.4);
+    border-radius: 8px;
+}
+
+.memo-timestamp-info {
+    text-align: center;
+}
+
+.memo-timestamp {
+    font-size: 12px;
+    color: #7d8590;
+    line-height: 1.4;
+    opacity: 0.8;
 }
 
 
@@ -2342,10 +2502,11 @@ body {
     font-size: 12px;
     color: #7d8590;
     margin-bottom: 4px;
+    opacity: 0.8;
 }
 
 .schedule-item-created {
-    font-size: 11px;
+    font-size: 12px;
     color: #7d8590;
     opacity: 0.8;
 }
@@ -2626,7 +2787,6 @@ body {
     }
     /* 메모 컨트롤 레이아웃 조정 */
     .memo-search-container {
-        flex-direction: column;
         gap: 12px;
         align-items: stretch;
     }

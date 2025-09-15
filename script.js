@@ -477,6 +477,7 @@ class AttendanceChecker {
         this.currentTodoEditId = null;
         this.pendingConfirmAction = null;
         this.currentViewingDate = null;
+        this.currentModalYear = this.currentYear; // 모달 연도 초기화
 
         // 메모 편집 상태 관리용 프로퍼티 추가
         this.memoEditMode = false;
@@ -499,6 +500,9 @@ class AttendanceChecker {
         this.currentTodoFilter = null;
         this.currentMemoFilter = null;
         this.currentCounterFilter = null;
+        this.currentCounterTimeFilter = 'all';
+        this.videoEnabled = true; // 배경 동영상 활성화 상태
+        this.currentMediaIndex = null;
         this.currentMemoSearch = "";
         this.currentScheduleSearch = "";
         this.currentScheduleTypeFilter = ""; // 새로운 필터 추가
@@ -576,14 +580,30 @@ class AttendanceChecker {
             '"그들은 과정보다는 큰 성취를 원하지. 하지만 작은 변화는 작은 일의 성취가 모여서 이뤄지는 거야." - 비포 선셋 (2004)',
             '"타인보다 우수하다고 해서 고귀한 것은 아니다. 과거의 자신보다 우수한 것이야말로 진정으로 고귀한 것이다." - 킹스맨 (2014)',
             '"편견은 내가 다른 사람을 사랑하지 못하게 하고, 오만은 다른 사람이 나를 사랑할 수 없게 만든다." - 오만과 편견(2005)',
-            '"그리워하는데도 한 번 만나고는 못 만나게 되기도 하고, 일생을 못 잊으면서도 아니 만나고 살기도 한다" - 피천득, 인연',
+            '"그리워하는데도 한 번 만나고는 못 만나게 되기도 하고, 일생을 못 잊으면서도 아니 만나고 살기도 한다" - [인연]/피천득',
+            '"세상에 모든 사랑이 무사하기를" - [사서함 110호의 우편물]/이도우',
+            '"상대가 원하는 걸 해주는 것 보다 상대가 싫어하는 걸 하지 않는 것이야 말로 큰 사랑이 아닐까" - [언어의 온도]/이기주',
+            '"너무 치열하게 살지 마라. 인생은 우리에게 주어진 선물이지, 맹목적으로 전진만 하다가 그렇게 죽어가라고 주어진 것이 아니다" - [상처없는 밤은 없다]/김해찬',
+            '"사랑하는 데 이유를 달지 마세요" - [마법의 순간]/파울로코엘료',
+            '"비가 오니 오늘은 좋은 날이야. 너는 여전히 어디에서 어디로 가는구나" - [천국보다 낯선]/이장욱',
+            '"너무 많은 생각에 지금을 놓치지 말아라."',
+            '"어리광 부리며 살아라. 그러다 부러진다."',
+            '"영리한 체 말하기 보다는, 술을 마시고 취해서 우는 것이 훨씬 나을 것 같다."',
+            '"말하지 않는 것이 꽃이다."',
+            '"계속하는 것이 힘이다."',
+            '"욕망과 욕심을 버리면 대부분의 문제는 없어진다."',
+            '"행동하는 것은 나의 몫, 비판하는 것은 남의 몫. 내가 알 바가 아니다."',
+            '"인간의 일생은 참으로 사소한 일일 뿐이다."',
+            '"꽃이였던 내가 다른 이의 거름이 되길 바란다. 다른 이가 나의 거름이 되어 준 것처럼."',
+            '"기회는 저금할 수 없다."',
+            '"인내하자. 사랑하자. 이해하자. 용서하자. 눈을 감고 심호흡을 하고 그저 살아가자."',
         ];
 
         this.welcomeMessages = [
             "반갑습니다.",
             "안녕하세요.",
             "좋은 하루입니다.",
-            "오늘도 화이팅!",
+            "오늘도 힘내세요.",
             "멋진 하루 되세요.",
             "어떤 생각을 하고 계신가요?",
             "오늘도 배움과 성찰을 놓치지 않는 하루가 되길.",
@@ -610,7 +630,7 @@ class AttendanceChecker {
             "꾸준함이 답이에요.",
             "진심은 통해요.",
             "무섭다면 좋아해보세요.",
-            "강강약약 외유내강.",
+            "강약약약 외유내강.",
             "심호흡 한 번 하고 갈까요?",
             "마음가짐이 하루를 바꿔요.",
             "2초의 여유를 가지길 바랍니다.",
@@ -656,11 +676,16 @@ class AttendanceChecker {
             "지금 이 순간이 전부는 아니에요.",
             "단순함이 가장 강해요.",
             "집중해 볼까요?",
+            "기지개 켜볼까요?",
+            "심호흡 해볼까요?",
+            "어깨를 돌려보세요.",
+            "손목을 풀어주세요.",
         ];
 
         this.init();
         this.loadData();
-        this.loadRandomBackground();
+        this.loadBackgroundVideoSetting();
+        this.loadRandomMedia();
         this.updateDateTime();
         this.updateDashboardClock();
         this.renderCalendar();
@@ -680,6 +705,141 @@ class AttendanceChecker {
     init() {
         this.initEventListeners();
         this.displayRandomWelcomeMessage(); // updateUserName() 대신 사용
+    }
+
+    // 데이로그 상세보기 모달
+    showAttendanceDetailModal(log) {
+        const modal = document.getElementById("attendanceDetailModal");
+        modal.dataset.logId = log.id;
+
+        const date = new Date(log.date);
+        const formattedDate = date.toLocaleDateString("ko-KR", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            weekday: "long"
+        });
+
+        const startTime = log.timestamp ?
+            new Date(log.timestamp).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }) : "미체크인";
+        const endTime = log.clockedOut ?
+            new Date(log.clockedOut).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }) : "미체크아웃";
+
+        document.getElementById("attendanceDetailDate").textContent = formattedDate;
+        document.getElementById("attendanceDetailMemo").textContent = log.memo || "메모 없음";
+        document.getElementById("attendanceDetailTime").textContent = `시작: ${startTime} | 종료: ${endTime}`;
+
+        modal.style.display = "flex";
+    }
+
+    hideAttendanceDetailModal() {
+        document.getElementById("attendanceDetailModal").style.display = "none";
+    }
+
+    // 디데이카운터 상세보기 모달
+    showCounterDetailModal(counter) {
+        const modal = document.getElementById("counterDetailModal");
+        modal.dataset.counterId = counter.id;
+
+        const daysDiff = this.calculateDaysDifference(counter.targetDate);
+        const daysText = this.formatDaysText(daysDiff);
+        const targetDate = new Date(counter.targetDate);
+        const dateText = targetDate.toLocaleDateString("ko-KR");
+
+        document.getElementById("counterDetailTitle").textContent = counter.title;
+        document.getElementById("counterDetailDate").textContent = dateText;
+        document.getElementById("counterDetailDays").textContent = daysText;
+        document.getElementById("counterDetailCreated").textContent =
+            new Date(counter.createdAt).toLocaleDateString("ko-KR");
+
+        modal.style.display = "flex";
+    }
+
+    hideCounterDetailModal() {
+        document.getElementById("counterDetailModal").style.display = "none";
+    }
+
+    showAttendanceCreateModal() {
+        const modal = document.getElementById("attendanceCreateModal");
+        const memoInput = document.getElementById("attendanceCreateMemo");
+
+        // 입력 필드 초기화
+        memoInput.value = "";
+
+        modal.style.display = "flex";
+        setTimeout(() => {
+            memoInput.focus();
+        }, 100);
+    }
+
+    hideAttendanceCreateModal() {
+        document.getElementById("attendanceCreateModal").style.display = "none";
+    }
+
+    confirmAttendanceCreate() {
+        const memoInput = document.getElementById("attendanceCreateMemo");
+        const memo = memoInput.value.trim();
+
+        const today = this.getKSTDate();
+        const key = this.getDateKey(today);
+
+        this.attendanceData[key] = true;
+
+        const logEntry = {
+            date: key,
+            timestamp: this.formatDateTime(today),
+            memo: memo,
+            clockedOut: null,
+            id: Date.now(),
+        };
+        this.attendanceLog.push(logEntry);
+
+        this.saveData();
+        this.updateStats();
+        this.updateDashboardStats();
+        this.updateModeStats();
+        this.renderAttendanceLog();
+        this.renderCalendar();
+        this.hideAttendanceCreateModal();
+        this.showToast("데이 로그가 기록되었습니다!", "success");
+    }
+
+    changeYearInModal(modalType, direction) {
+        if (modalType === 'allSchedules') {
+            this.currentModalYear = parseInt(document.getElementById('allSchedulesCurrentYear').textContent) + direction;
+            document.getElementById('allSchedulesCurrentYear').textContent = this.currentModalYear;
+            this.renderAllSchedulesList();
+        }
+    }
+
+    onScheduleSearch() {
+        const searchInput = document.getElementById('scheduleSearchInput');
+        this.currentScheduleSearch = searchInput.value.trim();
+        // scheduleFilterSelect 값 반영
+        const filterSelect = document.getElementById('scheduleFilterSelect');
+        this.currentScheduleTypeFilter = filterSelect.value;
+        this.renderAllSchedulesList();
+    }
+
+    clearScheduleSearch() {
+        this.currentScheduleSearch = '';
+        this.currentScheduleTypeFilter = '';
+        document.getElementById('scheduleSearchInput').value = '';
+        document.getElementById('scheduleFilterSelect').value = '';
+        this.renderAllSchedulesList();
+    }
+
+    hideAllSchedulesModal() {
+        const modal = document.getElementById("allSchedulesModal");
+        if (modal) {
+            modal.style.display = "none";
+        }
+        this.currentScheduleSearch = '';
+        this.currentScheduleTypeFilter = '';
+        const searchInput = document.getElementById('scheduleSearchInput');
+        const filterSelect = document.getElementById('scheduleFilterSelect');
+        if (searchInput) searchInput.value = '';
+        if (filterSelect) filterSelect.value = '';
     }
 
     // 사용자 이름 업데이트를 랜덤 환영 메시지 표시로 변경
@@ -1072,6 +1232,9 @@ class AttendanceChecker {
             if (this.currentMode === "schedule") {
                 this.renderMonthlyCalendar();
             }
+            if (this.currentMode === "attendance") {
+                this.renderAttendanceLog();
+            }
         });
 
         document.getElementById("nextYear").addEventListener("click", () => {
@@ -1080,6 +1243,9 @@ class AttendanceChecker {
             this.renderCalendar();
             if (this.currentMode === "schedule") {
                 this.renderMonthlyCalendar();
+            }
+            if (this.currentMode === "attendance") {
+                this.renderAttendanceLog();
             }
         });
 
@@ -1094,6 +1260,16 @@ class AttendanceChecker {
         // 로그아웃 버튼
         document.getElementById("logoutBtn").addEventListener("click", () => {
             this.logout();
+        });
+
+        // 배경 미디어 새로고침 버튼
+        document.getElementById("refreshBgBtn").addEventListener("click", () => {
+            this.loadRandomMedia();
+        });
+
+        // 배경 동영상 토글 버튼 (위 코드 다음에 추가)
+        document.getElementById("toggleVideoBtn").addEventListener("click", () => {
+            this.toggleBackgroundVideo();
         });
 
         // 월 네비게이션 (일정 모드)
@@ -1200,6 +1376,17 @@ class AttendanceChecker {
                 this.showCounterModal();
             });
 
+        document.querySelectorAll('.counter-filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const filter = btn.dataset.filter;
+                this.setCounterTimeFilter(filter);
+
+                // 활성 버튼 변경
+                document.querySelectorAll('.counter-filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+
         // 전체 삭제 버튼들
         document
             .getElementById("clearAttendanceBtn")
@@ -1224,6 +1411,7 @@ class AttendanceChecker {
         document.getElementById("counterClearBtn").addEventListener("click", () => {
             this.confirmClearAll("counter");
         });
+
 
         // 모달 이벤트들
         this.initModalEvents();
@@ -1289,6 +1477,59 @@ class AttendanceChecker {
     }
 
     initModalEvents() {
+        // 데이로그 상세보기 모달
+        document.getElementById("attendanceDetailClose").addEventListener("click", () => {
+            this.hideAttendanceDetailModal();
+        });
+
+        document.getElementById("attendanceDetailEdit").addEventListener("click", () => {
+            const logId = document.getElementById("attendanceDetailModal").dataset.logId;
+            if (logId) {
+                this.showAttendanceEditModal(parseInt(logId));
+                this.hideAttendanceDetailModal();
+            }
+        });
+
+        document.getElementById("attendanceDetailDelete").addEventListener("click", () => {
+            const logId = document.getElementById("attendanceDetailModal").dataset.logId;
+            if (logId) {
+                this.deleteAttendanceLog(parseInt(logId));
+                this.hideAttendanceDetailModal();
+            }
+        });
+
+        // 디데이카운터 상세보기 모달
+        document.getElementById("counterDetailClose").addEventListener("click", () => {
+            this.hideCounterDetailModal();
+        });
+
+        document.getElementById("counterDetailEdit").addEventListener("click", () => {
+            const counterId = document.getElementById("counterDetailModal").dataset.counterId;
+            if (counterId) {
+                this.editCounter(parseInt(counterId));
+                this.hideCounterDetailModal();
+            }
+        });
+
+        document.getElementById("counterDetailDelete").addEventListener("click", () => {
+            const counterId = document.getElementById("counterDetailModal").dataset.counterId;
+            if (counterId) {
+                this.deleteCounter(parseInt(counterId));
+                this.hideCounterDetailModal();
+            }
+        });
+        // 데이로그 생성 모달 (기존 코드들 다음에 추가)
+        document
+            .getElementById("attendanceCreateCancel")
+            .addEventListener("click", () => {
+                this.hideAttendanceCreateModal();
+            });
+
+        document
+            .getElementById("attendanceCreateConfirm")
+            .addEventListener("click", () => {
+                this.confirmAttendanceCreate();
+            });
         // 일정 모달
         document
             .getElementById("scheduleModalCancel")
@@ -1680,26 +1921,131 @@ class AttendanceChecker {
         document.getElementById("currentYear").textContent = this.currentYear;
     }
 
-    loadRandomBackground() {
-        const randomNum = Math.floor(Math.random() * 10) + 1;
+    loadRandomMedia() {
+        // 1부터 10까지 중에서 현재와 다른 번호 선택
+        let randomNum;
+        do {
+            randomNum = Math.floor(Math.random() * 10) + 1;
+        } while (randomNum === this.currentMediaIndex);
+
+        if (this.videoEnabled) {
+            this.loadBackgroundVideo(randomNum);
+        } else {
+            this.loadBackgroundImage(randomNum);
+        }
+    }
+
+    loadBackgroundVideo(randomNum) {
+        const bgVideo = document.getElementById("backgroundVideo");
+        const bgImage = document.getElementById("backgroundImage");
+        const videoSource = document.getElementById("videoSource");
+        const videoPath = `src/bgv${randomNum}.mp4`;
+
+        const testVideo = document.createElement('video');
+        testVideo.muted = true;
+
+        testVideo.onloadeddata = () => {
+            // 비디오 로드 성공
+            this.currentMediaIndex = randomNum;
+            this.fadeOutCurrentMedia(() => {
+                videoSource.src = videoPath;
+                bgVideo.load();
+                bgVideo.style.display = "block";
+                bgImage.style.display = "none";
+
+                setTimeout(() => {
+                    bgVideo.style.opacity = "1";
+                }, 50);
+            });
+        };
+
+        testVideo.onerror = () => {
+            // 비디오 로드 실패, 다른 비디오 번호로 재시도
+            this.loadRandomMedia();
+        };
+
+        testVideo.src = videoPath;
+    }
+
+    loadBackgroundImage(randomNum) {
+        const bgVideo = document.getElementById("backgroundVideo");
         const bgImage = document.getElementById("backgroundImage");
         const imagePath = `src/bg${randomNum}.jpg`;
 
         const testImage = new Image();
-        testImage.onload = () => {
-            bgImage.src = imagePath;
-            bgImage.style.opacity = "0"; // 처음에는 투명하게
-            bgImage.style.display = "block";
 
-            // fade-in 효과
-            setTimeout(() => {
-                bgImage.style.opacity = "1";
-            }, 50); // 아주 짧은 지연으로 transition 트리거
+        testImage.onload = () => {
+            this.currentMediaIndex = randomNum;
+            this.fadeOutCurrentMedia(() => {
+                bgImage.src = imagePath;
+                bgImage.style.display = "block";
+                bgVideo.style.display = "none";
+
+                setTimeout(() => {
+                    bgImage.style.opacity = "1";
+                }, 50);
+            });
         };
+
         testImage.onerror = () => {
-            bgImage.style.display = "none";
+            // 이미지 로드 실패, 다른 이미지 번호로 재시도
+            this.loadRandomMedia();
         };
+
         testImage.src = imagePath;
+    }
+
+    getAvailableMediaCount() {
+        // 실제로는 정확한 개수를 알기 어려우므로 최소 1개는 있다고 가정
+        // 이 함수는 무한 루프 방지용으로만 사용
+        return 10;
+    }
+
+
+    toggleBackgroundVideo() {
+        this.videoEnabled = !this.videoEnabled;
+        this.updateVideoButtonState();
+
+        // 현재 인덱스를 리셋하여 다른 배경이 나오도록
+        this.currentMediaIndex = null;
+        this.loadRandomMedia();
+
+        // 설정 저장
+        localStorage.setItem('backgroundVideoEnabled', this.videoEnabled);
+
+        const statusText = this.videoEnabled ? '배경 동영상이 켜졌습니다' : '배경 동영상이 꺼졌습니다';
+        this.showToast(statusText, 'info');
+    }
+
+    updateVideoButtonState() {
+        const toggleBtn = document.getElementById("toggleVideoBtn");
+        if (this.videoEnabled) {
+            toggleBtn.classList.remove('video-off');
+            toggleBtn.classList.add('video-on');
+            toggleBtn.title = '배경 동영상 끄기';
+        } else {
+            toggleBtn.classList.remove('video-on');
+            toggleBtn.classList.add('video-off');
+            toggleBtn.title = '배경 동영상 켜기';
+        }
+    }
+
+    loadBackgroundVideoSetting() {
+        const saved = localStorage.getItem('backgroundVideoEnabled');
+        if (saved !== null) {
+            this.videoEnabled = saved === 'true';
+        }
+        this.updateVideoButtonState();
+    }
+
+    fadeOutCurrentMedia(callback) {
+        const bgVideo = document.getElementById("backgroundVideo");
+        const bgImage = document.getElementById("backgroundImage");
+
+        bgVideo.style.opacity = "0";
+        bgImage.style.opacity = "0";
+
+        setTimeout(callback, 300);
     }
 
     // 확인 모달
@@ -1879,24 +2225,8 @@ class AttendanceChecker {
             return;
         }
 
-        this.attendanceData[key] = true;
-
-        const logEntry = {
-            date: key,
-            timestamp: this.formatDateTime(today),
-            memo: "",
-            clockedOut: null,
-            id: Date.now(),
-        };
-        this.attendanceLog.push(logEntry);
-
-        this.saveData();
-        this.updateStats();
-        this.updateDashboardStats();
-        this.updateModeStats(); // stats 즉시 업데이트
-        this.renderAttendanceLog();
-        this.renderCalendar();
-        this.showToast("데이 로그가 기록되었습니다!", "success");
+        // 모달 표시
+        this.showAttendanceCreateModal();
     }
 
     // clockOutAttendance 함수 수정 (한국 표준시 사용)
@@ -2224,8 +2554,26 @@ class AttendanceChecker {
                 return;
             }
 
+            // 현재 연도에 해당하는 로그만 필터링
+            const filteredLog = this.attendanceLog.filter(log => {
+                if (!log.date) return false;
+                const logYear = new Date(log.date).getFullYear();
+                return logYear === this.currentYear;
+            });
+
+            if (filteredLog.length === 0) {
+                const emptyState = document.createElement("div");
+                emptyState.className = "empty-state";
+                emptyState.innerHTML = `
+            <h3>${this.currentYear}년 데이 로그 없음</h3>
+            <p>이 연도에 기록된 데이 로그가 없습니다</p>
+        `;
+                logContainer.appendChild(emptyState);
+                return;
+            }
+
             // log.date 기준 내림차순 정렬 (미래 날짜가 위로, 과거 날짜가 아래로)
-            const sortedLog = [...this.attendanceLog].sort(
+            const sortedLog = [...filteredLog].sort(
                 (a, b) => new Date(b.date) - new Date(a.date)
             );
 
@@ -2256,35 +2604,38 @@ class AttendanceChecker {
                         // 시간 정보 구성: 로그일 | 로그 시작 | 로그 종료
                         const timeInfo = `로그일: ${formattedDate} | 로그 시작: ${startTime} | 로그 종료: ${endTime}`;
 
-                        // 메모 입력 필드 - readonly로 설정
+                        // 메모 내용 축약 (50자 제한)
                         const memoValue = log.memo || "";
+                        const truncatedMemo = memoValue.length > 50 ? memoValue.substring(0, 50) + "..." : memoValue;
+                        const displayMemo = truncatedMemo || "메모 없음";
 
                         item.innerHTML = `
-            <div class="attendance-info">
-                <input type="text" class="attendance-memo-input" value="${memoValue}" 
-                    placeholder="하루를 간단하게 기록해보세요..." readonly>
-                <div class="attendance-time">${timeInfo}</div>
-            </div>
-            <div class="attendance-item-controls">
-                ${
-                  !log.clockedOut
-                    ? `<button class="attendance-btn clock-out" onclick="attendanceChecker.clockOutAttendance(${log.id})">로그 종료</button>`
-                    : ""
-                }
-                <button class="attendance-btn edit" onclick="attendanceChecker.showAttendanceEditModal(${
-                  log.id
-                })">편집</button>
-                <button class="attendance-btn delete" onclick="attendanceChecker.deleteAttendanceLog(${
-                  log.id
-                })">삭제</button>
-            </div>
-        `;
+    <div class="attendance-info">
+        <input type="text" class="attendance-memo-input" value="${displayMemo}" 
+            placeholder="하루를 간단하게 기록해보세요..." readonly title="${memoValue}">
+        <div class="attendance-time">${timeInfo}</div>
+    </div>
+    <div class="attendance-item-controls">
+        ${
+          !log.clockedOut
+            ? `<button class="attendance-btn clock-out" onclick="attendanceChecker.clockOutAttendance(${log.id})">로그 종료</button>`
+            : ""
+        }
+        <button class="attendance-btn delete" onclick="attendanceChecker.deleteAttendanceLog(${log.id})">삭제</button>
+    </div>
+`;
 
-      logContainer.appendChild(item);
+// 아이템 클릭 이벤트 추가
+item.addEventListener("click", (e) => {
+    if (e.target.classList.contains("attendance-btn")) return;
+    this.showAttendanceDetailModal(log);
+});
+
+        logContainer.appendChild(item);
     });
 
     this.updateStats();
-  }
+}
 
   updateAttendanceMemo(id, memo) {
     const log = this.attendanceLog.find((l) => l.id === id);
@@ -2731,14 +3082,15 @@ class AttendanceChecker {
         content += `<br>메모: ${memos.length}개`;
       }
     } else if (this.currentMode === "counter") {
-      const counters = this.getCountersForDate(date);
-      if (counters.length > 0) {
-        content += "<br>카운터:";
-        counters.forEach((counter) => {
-          content += `<br>• ${counter.title}`;
-        });
-      }
-    }
+  const counters = this.getCountersForDate(date);
+  if (counters.length > 0) {
+    content += "<br>카운터:";
+    counters.forEach((counter) => {
+      const titleText = this.truncateText(counter.title, 100);  // <- 여기 추가
+      content += `<br>• ${titleText}`;
+    });
+  }
+}
 
     return content;
   }
@@ -3213,143 +3565,115 @@ class AttendanceChecker {
   }
 
   showAllSchedulesModal() {
-    const modal = document.getElementById("allSchedulesModal");
-    const searchInput = document.getElementById("scheduleSearchInput");
-    const filterSelect = document.getElementById("scheduleFilterSelect");
-
-    searchInput.value = "";
-    filterSelect.value = "";
-    this.currentScheduleSearch = "";
-    this.currentScheduleTypeFilter = "";
-
+    document.getElementById("allSchedulesModal").style.display = "flex";
+    document.getElementById('allSchedulesCurrentYear').textContent = this.currentYear;
+    this.currentModalYear = this.currentYear;
+    document.getElementById('scheduleSearchInput').value = '';
+    document.getElementById('scheduleFilterSelect').value = '';
+    this.currentScheduleSearch = '';
+    this.currentScheduleTypeFilter = '';
     this.renderAllSchedulesList();
-    modal.style.display = "flex";
-  }
+}
 
   hideAllSchedulesModal() {
     document.getElementById("allSchedulesModal").style.display = "none";
   }
 
   renderAllSchedulesList() {
-    const container = document.getElementById("allSchedulesList");
-    container.innerHTML = "";
+    const scheduleList = document.getElementById("allSchedulesList");
+    if (!scheduleList) return;
 
-    let filteredSchedules = this.schedulesData;
+    scheduleList.innerHTML = "";
 
-    // 검색 필터 적용
+    // 모달 연도 초기화
+    if (!this.currentModalYear) {
+        this.currentModalYear = this.currentYear;
+        document.getElementById('allSchedulesCurrentYear').textContent = this.currentYear;
+    }
+    const modalYear = this.currentModalYear;
+
+    let filteredSchedules = [];
+
     if (this.currentScheduleSearch) {
-      filteredSchedules = filteredSchedules.filter(
-        (schedule) =>
-          schedule.title
-            .toLowerCase()
-            .includes(this.currentScheduleSearch.toLowerCase()) ||
-          (schedule.content &&
-            schedule.content
-              .toLowerCase()
-              .includes(this.currentScheduleSearch.toLowerCase()))
-      );
+        // 검색어가 있으면 전체 일정에서 검색 (연도 제한 없음)
+        filteredSchedules = this.schedulesData.filter(schedule => {
+            const titleMatch = schedule.title.toLowerCase().includes(this.currentScheduleSearch.toLowerCase());
+            const contentMatch = schedule.content && schedule.content.toLowerCase().includes(this.currentScheduleSearch.toLowerCase());
+            return titleMatch || contentMatch;
+        });
+    } else {
+        // 검색어가 없으면 모달 연도의 일정만 필터링
+        filteredSchedules = this.schedulesData.filter(schedule => {
+            if (schedule.validDates && Array.isArray(schedule.validDates)) {
+                return schedule.validDates.some(dateStr => {
+                    if (!dateStr || typeof dateStr !== 'string') return false;
+                    const year = parseInt(dateStr.split('-')[0], 10);
+                    return year === modalYear;
+                });
+            }
+            return false;
+        });
     }
 
-    // 타입 필터 적용 (새로운 기능)
+    // 타입 필터 적용 (scheduleFilterSelect 유지)
     if (this.currentScheduleTypeFilter) {
-      filteredSchedules = filteredSchedules.filter((schedule) => {
-        if (this.currentScheduleTypeFilter === "important") {
-          return schedule.isImportant;
-        } else if (this.currentScheduleTypeFilter === "holiday") {
-          return schedule.isHoliday;
-        }
-        return true;
-      });
+        filteredSchedules = filteredSchedules.filter(schedule => {
+            if (this.currentScheduleTypeFilter === "important") {
+                return schedule.isImportant;
+            } else if (this.currentScheduleTypeFilter === "holiday") {
+                return schedule.isHoliday;
+            }
+            return true;
+        });
     }
 
     if (filteredSchedules.length === 0) {
-      const emptyState = document.createElement("div");
-      emptyState.className = "empty-state";
-      emptyState.innerHTML = `
-                <h3>일정을 찾을 수 없습니다</h3>
-                <p>${
-                  this.currentScheduleSearch || this.currentScheduleTypeFilter
-                    ? "다른 검색어나 필터를 시도해보세요"
-                    : "첫 번째 일정을 만들어보세요"
-                }</p>
-            `;
-      container.appendChild(emptyState);
-      return;
-    }
+        const emptyState = document.createElement("div");
+        emptyState.className = "empty-state";
+        emptyState.innerHTML = `
+            <h3>일정이 없습니다</h3>
+            <p>${this.currentScheduleSearch ? '검색 결과가 없습니다.' : '새로운 일정을 추가해보세요!'}</p>
+        `;
+        scheduleList.appendChild(emptyState);
+    } else {
+        filteredSchedules.sort((a, b) => {
+    const aDate = a.startDate || a.validDates?.[0] || '';
+    const bDate = b.startDate || b.validDates?.[0] || '';
+    return new Date(bDate) - new Date(aDate);
+});
 
-    const sortedSchedules = [...filteredSchedules].sort(
-      (a, b) => new Date(a.startDate) - new Date(b.startDate)
-    );
+        filteredSchedules.forEach(schedule => {
+            const item = document.createElement("div");
+            item.className = `schedule-item ${schedule.isImportant ? 'important' : ''} ${schedule.isHoliday ? 'holiday' : ''}`;
 
-    sortedSchedules.forEach((schedule) => {
-      const item = document.createElement("div");
-      item.className = "schedule-item";
+            const displayDate = schedule.startDate || (schedule.validDates && schedule.validDates.length > 0 ? schedule.validDates[0] : '');
+            const endDate = schedule.endDate;
+            const dateText = displayDate ? new Date(displayDate).toLocaleDateString("ko-KR") : '';
+            const periodText = endDate && endDate !== displayDate ? `${dateText} ~ ${new Date(endDate).toLocaleDateString("ko-KR")}` : dateText;
 
-      if (schedule.isImportant) {
-        item.classList.add("important");
-      } else if (schedule.isHoliday) {
-        item.classList.add("holiday");
-      }
-
-      const startDate = new Date(schedule.startDate);
-      const endDate = new Date(schedule.endDate);
-      const dateText =
-        schedule.startDate === schedule.endDate
-          ? startDate.toLocaleDateString("ko-KR")
-          : `${startDate.toLocaleDateString(
-              "ko-KR"
-            )} - ${endDate.toLocaleDateString("ko-KR")}`;
-
-      // 제목과 내용 길이 제한 (40글자로 변경)
-      const truncatedTitle = this.truncateText(schedule.title, 40);
-      const truncatedContent = this.truncateText(schedule.content || "", 40);
-
-      item.innerHTML = `
+            item.innerHTML = `
                 <div class="schedule-item-info">
-                    <div class="schedule-item-title">${truncatedTitle}</div>
-                    ${
-                      schedule.content
-                        ? `<div class="schedule-item-content">${truncatedContent}</div>`
-                        : ""
-                    }
-                    <div class="schedule-item-date">${dateText}</div>
-                    <div class="schedule-item-created">생성일: ${this.formatDateTimeShort(
-                      schedule.createdAt
-                    )}</div>
+                    <div class="schedule-item-title">${schedule.title}</div>
+                    <div class="schedule-item-content">${schedule.content || ''}</div>
+                    <div class="schedule-item-date">기간: ${periodText}</div>
+                    <div class="schedule-item-created">생성: ${new Date(schedule.createdAt).toLocaleDateString("ko-KR")}</div>
                 </div>
                 <div class="schedule-item-controls">
-                    <button class="schedule-edit-btn">편집</button>
-                    <button class="schedule-delete-btn">삭제</button>
+                    <button class="schedule-edit-btn" onclick="attendanceChecker.editSchedule(${schedule.id})">편집</button>
+                    <button class="schedule-delete-btn" onclick="attendanceChecker.deleteSchedule('${schedule.id}')">삭제</button>
                 </div>
             `;
 
-      // 클릭 이벤트: 일정 상세 보기
-      item.addEventListener("click", (e) => {
-        if (
-          e.target.classList.contains("schedule-edit-btn") ||
-          e.target.classList.contains("schedule-delete-btn")
-        )
-          return;
-        this.showScheduleDetailModal(schedule);
-      });
+            item.addEventListener("click", (e) => {
+    if (!e.target.closest(".schedule-item-controls")) {
+        attendanceChecker.showScheduleDetailModal(schedule);
+    }
+});
 
-      // 이벤트 리스너를 동적으로 추가
-      const editBtn = item.querySelector(".schedule-edit-btn");
-      const deleteBtn = item.querySelector(".schedule-delete-btn");
-
-      editBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        this.editSchedule(schedule.id);
-      });
-
-      deleteBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        this.deleteSchedule(schedule.id);
-      });
-
-      container.appendChild(item);
-    });
-  }
+            scheduleList.appendChild(item);
+        });
+    }
+}
 
   searchSchedules() {
     const searchInput = document.getElementById("scheduleSearchInput");
@@ -3490,7 +3814,7 @@ class AttendanceChecker {
                 <p>${
                   this.currentTodoFilter
                     ? "선택한 날짜에 할 일이 없습니다"
-                    : "위에서 첫 번째 할 일을 추가해보세요"
+                    : "첫 번째 할 일을 추가해보세요"
                 }</p>
             `;
       todoList.appendChild(emptyState);
@@ -3509,29 +3833,27 @@ class AttendanceChecker {
 
         const isEditing = this.currentTodoEditId === todo.id;
 
-        item.innerHTML = `
-                    <div class="todo-item-content">
-                        <textarea class="todo-text ${
-                          isEditing ? "editing" : ""
-                        }" ${isEditing ? "" : "readonly"}>${
-          todo.text
-        }</textarea>
-                        ${timestampHtml}
-                    </div>
-                    <div class="todo-controls">
-                        <button class="todo-btn ${
-                          isEditing ? "complete" : "edit"
-                        }" onclick="attendanceChecker.toggleTodoEdit(${
+item.innerHTML = `
+    <div class="todo-item-content">
+        <textarea class="todo-text ${
+          isEditing ? "editing" : ""
+        }" ${isEditing ? "" : "readonly"}>${
+  todo.text
+}</textarea>
+        ${timestampHtml}
+    </div>
+    <div class="todo-controls">
+        <button class="todo-btn ${
+          isEditing ? "complete" : "edit"
+        }" onclick="attendanceChecker.toggleTodoEdit(${
+  todo.id
+}, this)">${isEditing ? "저장" : "편집"}</button>
+        ${isEditing ? '' : `<button class="todo-btn complete" onclick="attendanceChecker.completeTodo(${todo.id})">완료</button>`}
+        <button class="todo-btn delete" onclick="attendanceChecker.deleteTodo(${
           todo.id
-        }, this)">${isEditing ? "저장" : "편집"}</button>
-                        <button class="todo-btn complete" onclick="attendanceChecker.completeTodo(${
-                          todo.id
-                        })">완료</button>
-                        <button class="todo-btn delete" onclick="attendanceChecker.deleteTodo(${
-                          todo.id
-                        })">삭제</button>
-                    </div>
-                `;
+        })">삭제</button>
+    </div>
+`;
         todoList.appendChild(item);
 
         // 편집 모드일 때 포커스 유지
@@ -3996,7 +4318,7 @@ class AttendanceChecker {
       } else {
         emptyState.innerHTML = `
                     <h3>메모가 없습니다</h3>
-                    <p>첫 번째 메모를 만들어보세요!</p>
+                    <p>첫 번째 메모를 만들어보세요</p>
                 `;
       }
       memoList.appendChild(emptyState);
@@ -4182,87 +4504,188 @@ class AttendanceChecker {
 
     counterList.innerHTML = "";
 
-    let filteredCounters = this.counterData;
+    let filteredCounters = [...this.counterData];
 
+    // 날짜 기준 필터링 (기존 날짜 선택 필터링)
     if (this.currentCounterFilter) {
-      const filterDate = this.currentCounterFilter;
-      filteredCounters = this.counterData.filter((counter) => {
-        return counter.targetDate === filterDate;
-      });
+        const filterDate = this.currentCounterFilter;
+        filteredCounters = filteredCounters.filter((counter) => {
+            return counter.targetDate === filterDate;
+        });
     }
 
-    counterClearBtn.style.display =
-      this.counterData.length > 0 ? "block" : "none";
+    // 시간 기준 필터링 (새로 추가된 필터링)
+    if (this.currentCounterTimeFilter && this.currentCounterTimeFilter !== 'all') {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        filteredCounters = filteredCounters.filter((counter) => {
+            const targetDate = new Date(counter.targetDate);
+            targetDate.setHours(0, 0, 0, 0);
+            const daysDiff = Math.ceil((targetDate - today) / (1000 * 60 * 60 * 24));
+            
+            switch (this.currentCounterTimeFilter) {
+                case 'past':
+                    return daysDiff < 0;
+                case 'today':
+                    return daysDiff === 0;
+                case 'upcoming':
+                    return daysDiff > 0;
+                default:
+                    return true;
+            }
+        });
+    }
+
+    counterClearBtn.style.display = this.counterData.length > 0 ? "block" : "none";
 
     if (filteredCounters.length === 0) {
-      const emptyState = document.createElement("div");
-      emptyState.className = "empty-state";
+        const emptyState = document.createElement("div");
+        emptyState.className = "empty-state";
 
-      if (this.currentCounterFilter) {
-        emptyState.innerHTML = `
-                    <h3>디데이 카운터를 찾을 수 없습니다</h3>
-                    <p>선택한 날짜에 디데이 카운터가 없습니다</p>
-                `;
-      } else {
-        emptyState.innerHTML = `
-                    <h3>디데이 카운터가 없습니다</h3>
-                    <p>중요한 날짜를 추적할 첫 번째 디데이 카운터를 만들어보세요!</p>
-                `;
-      }
-      counterList.appendChild(emptyState);
-    } else {
-      filteredCounters.sort((a, b) => {
-        const aDays = Math.abs(this.calculateDaysDifference(a.targetDate));
-        const bDays = Math.abs(this.calculateDaysDifference(b.targetDate));
-        return aDays - bDays;
-      });
-
-      filteredCounters.forEach((counter) => {
-        const item = document.createElement("div");
-        item.className = "counter-item";
-
-        const daysDiff = this.calculateDaysDifference(counter.targetDate);
-        const daysText = this.formatDaysText(daysDiff);
-
-        let daysClass = "future";
-        let statusIcon = "🔮";
-
-        if (daysDiff === 0) {
-          daysClass = "today";
-          statusIcon = "🎯";
-          item.classList.add("today");
-        } else if (daysDiff < 0) {
-          daysClass = "past";
-          statusIcon = "📅";
+        if (this.currentCounterFilter) {
+            emptyState.innerHTML = `
+                <h3>디데이 카운터를 찾을 수 없습니다</h3>
+                <p>선택한 날짜에 디데이 카운터가 없습니다</p>
+            `;
+        } else if (this.currentCounterTimeFilter && this.currentCounterTimeFilter !== 'all') {
+            const filterText = this.getCounterTimeFilterText(this.currentCounterTimeFilter);
+            emptyState.innerHTML = `
+                <h3>${filterText}가 없습니다</h3>
+                <p>해당 조건에 맞는 디데이 카운터가 없습니다</p>
+            `;
         } else {
-          if (daysDiff <= 3) {
-            daysClass = "urgent";
-            statusIcon = "⚠️";
-          }
+            emptyState.innerHTML = `
+                <h3>디데이 카운터가 없습니다</h3>
+                <p>중요한 날짜를 추적할 첫 번째 디데이 카운터를 만들어보세요</p>
+            `;
         }
+        counterList.appendChild(emptyState);
+    } else {
+        // 정렬: 미래 → 오늘 → 과거 순으로 변경
+        filteredCounters.sort((a, b) => {
+            const aDays = this.calculateDaysDifference(a.targetDate);
+            const bDays = this.calculateDaysDifference(b.targetDate);
+            
+            // 미래가 먼저 (양수가 먼저)
+            if (aDays > 0 && bDays <= 0) return -1;
+            if (bDays > 0 && aDays <= 0) return 1;
+            
+            // 둘 다 미래인 경우 가까운 순
+            if (aDays > 0 && bDays > 0) return aDays - bDays;
+            
+            // 오늘이 그 다음
+            if (aDays === 0 && bDays !== 0) return -1;
+            if (bDays === 0 && aDays !== 0) return 1;
+            
+            // 둘 다 과거인 경우 최근 순 (덜 지난 것이 먼저)
+            if (aDays < 0 && bDays < 0) return bDays - aDays;
+            
+            return 0;
+        });
 
-        const targetDate = new Date(counter.targetDate);
-        const dateText = targetDate.toLocaleDateString("ko-KR");
+        filteredCounters.forEach((counter) => {
+            const item = document.createElement("div");
+            item.className = "counter-item";
 
-        item.innerHTML = `
-                    <div class="counter-info">
-                        <div class="counter-title">${counter.title}</div>
-                        <div class="counter-date">${dateText}</div>
-                        <div class="counter-days ${daysClass}">
-                            ${daysText}
-                            <span class="counter-status-icon">${statusIcon}</span>
-                        </div>
+            const daysDiff = this.calculateDaysDifference(counter.targetDate);
+            const daysText = this.formatDaysText(daysDiff);
+
+            let daysClass = "future";
+            if (daysDiff === 0) {
+                daysClass = "today";
+                item.classList.add("today");
+            } else if (daysDiff < 0) {
+                daysClass = "past";
+            } else {
+                if (daysDiff <= 3) {
+                    daysClass = "urgent";
+                }
+            }
+
+            const targetDate = new Date(counter.targetDate);
+            const dateText = targetDate.toLocaleDateString("ko-KR");
+
+            // 제목 축약 (30자 제한)
+            const truncatedTitle = counter.title.length > 30 ? counter.title.substring(0, 30) + "..." : counter.title;
+
+            item.innerHTML = `
+                <div class="counter-info">
+                    <div class="counter-first-line">
+                        <span class="counter-date-text">${dateText}</span>
+                        <span class="counter-separator">|</span>
+                        <span class="counter-title-text" title="${counter.title}">${truncatedTitle}</span>
                     </div>
-                    <div class="counter-item-controls">
-                        <button class="counter-btn edit" onclick="attendanceChecker.editCounter(${counter.id})">편집</button>
-                        <button class="counter-btn delete" onclick="attendanceChecker.deleteCounter(${counter.id})">삭제</button>
+                    <div class="counter-second-line">
+                        <span class="counter-days ${daysClass}">${daysText}</span>
                     </div>
-                `;
+                </div>
+                <div class="counter-item-controls">
+                    <button class="counter-btn delete" onclick="attendanceChecker.deleteCounter(${counter.id})">삭제</button>
+                </div>
+            `;
 
-        counterList.appendChild(item);
-      });
+            // 아이템 클릭 이벤트 추가
+            item.addEventListener("click", (e) => {
+                if (e.target.classList.contains("counter-btn")) return;
+                this.showCounterDetailModal(counter);
+            });
+
+            counterList.appendChild(item);
+        });
     }
-  }
+}
+
+// 데이카운터 시간 필터 설정
+setCounterTimeFilter(filter) {
+    this.currentCounterTimeFilter = filter;
+    if (filter !== 'all') {
+        this.showCounterTimeFilter(filter);
+    } else {
+        this.clearCounterTimeFilter();
+    }
+    this.renderCounterList();
+}
+
+// 데이카운터 시간 필터 표시
+showCounterTimeFilter(filter) {
+    const filterDisplay = document.getElementById("counterFilterDisplay");
+    const filterText = document.getElementById("counterFilterText");
+    
+    const filterTextValue = this.getCounterTimeFilterText(filter);
+    filterText.textContent = filterTextValue;
+    filterDisplay.style.display = "flex";
+}
+
+// 데이카운터 시간 필터 해제
+clearCounterTimeFilter() {
+    this.currentCounterTimeFilter = 'all';
+    document.getElementById("counterFilterDisplay").style.display = "none";
+    
+    // 활성 버튼을 '전체'로 변경
+    document.querySelectorAll('.counter-filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.filter === 'all') {
+            btn.classList.add('active');
+        }
+    });
+    
+    this.renderCounterList();
+}
+
+// 필터 텍스트 가져오기
+getCounterTimeFilterText(filter) {
+    switch (filter) {
+        case 'past':
+            return '지난 날';
+        case 'today':
+            return '오늘';
+        case 'upcoming':
+            return '다가올 날';
+        default:
+            return '전체';
+    }
+}
 
   calculateDaysDifference(targetDate) {
     const today = new Date();
